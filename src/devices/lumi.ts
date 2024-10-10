@@ -2,28 +2,33 @@ import fz from '../converters/fromZigbee';
 import tz from '../converters/toZigbee';
 import * as constants from '../lib/constants';
 import * as exposes from '../lib/exposes';
+import {logger} from '../lib/logger';
+import * as lumi from '../lib/lumi';
 import {
-    light,
-    numeric,
+    battery,
     binary,
-    enumLookup,
-    forceDeviceType,
-    temperature,
-    humidity,
-    forcePowerSource,
-    quirkAddEndpointCluster,
-    quirkCheckinInterval,
     customTimeResponse,
     deviceEndpoints,
-    battery,
+    enumLookup,
+    forceDeviceType,
+    forcePowerSource,
+    humidity,
     identify,
+    light,
+    numeric,
+    onOff,
+    quirkAddEndpointCluster,
+    quirkCheckinInterval,
+    temperature,
     windowCovering,
 } from '../lib/modernExtend';
 import * as reporting from '../lib/reporting';
+import * as globalStore from '../lib/store';
+import {DefinitionWithExtend} from '../lib/types';
+
 const e = exposes.presets;
 const ea = exposes.access;
-import * as lumi from '../lib/lumi';
-import * as globalStore from '../lib/store';
+
 const {
     lumiAction,
     lumiOperationMode,
@@ -66,13 +71,11 @@ const {
     lumiCommandMode,
     lumiBattery,
 } = lumi.modernExtend;
-import {logger} from '../lib/logger';
-import {Definition} from '../lib/types';
 
 const NS = 'zhc:lumi';
 const {manufacturerCode} = lumi;
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         zigbeeModel: ['lumi.flood.acn001'],
         model: 'SJCGQ13LM',
@@ -325,7 +328,7 @@ const definitions: Definition[] = [
             try {
                 const endpoint = device.endpoints[1];
                 await reporting.bind(endpoint, coordinatorEndpoint, ['genOnOff', 'genPowerCfg']);
-            } catch (error) {
+            } catch {
                 // fails for some but device works as expected: https://github.com/Koenkk/zigbee2mqtt/issues/9136
             }
         },
@@ -1889,6 +1892,34 @@ const definitions: Definition[] = [
         extend: [lumiZigbeeOTA()],
     },
     {
+        zigbeeModel: ['lumi.sensor_occupy.agl1'],
+        model: 'FP1E',
+        vendor: 'Aqara',
+        description: 'Presence sensor',
+        fromZigbee: [lumi.fromZigbee.lumi_specific],
+        toZigbee: [lumi.toZigbee.lumi_motion_sensitivity],
+        exposes: [
+            e.device_temperature(),
+            e.power_outage_count(),
+            e.motion_sensitivity_select(['low', 'medium', 'high']).withDescription('Select motion sensitivity to use.'),
+        ],
+        configure: async (device, coordinatorEndpoint) => {
+            // Retrieve motion sensitivity value
+            const endpoint = device.getEndpoint(1);
+            await endpoint.read('manuSpecificLumi', [0x010c], {manufacturerCode: manufacturerCode});
+        },
+        extend: [
+            lumiZigbeeOTA(),
+            lumi.lumiModernExtend.fp1ePresence(),
+            lumi.lumiModernExtend.fp1eMovement(),
+            lumi.lumiModernExtend.fp1eTargetDistance(),
+            lumi.lumiModernExtend.fp1eDetectionRange(),
+            lumi.lumiModernExtend.fp1eSpatialLearning(),
+            lumi.lumiModernExtend.fp1eRestartDevice(),
+            identify(),
+        ],
+    },
+    {
         zigbeeModel: ['lumi.sensor_magnet'],
         model: 'MCCGQ01LM',
         vendor: 'Xiaomi',
@@ -2132,7 +2163,7 @@ const definitions: Definition[] = [
                 const interval = setInterval(async () => {
                     try {
                         await switchEndpoint.read('genDeviceTempCfg', ['currentTemperature']);
-                    } catch (error) {
+                    } catch {
                         // Do nothing
                     }
                 }, 1800000);
@@ -2438,7 +2469,7 @@ const definitions: Definition[] = [
                 type === 'message' &&
                 data.type === 'attributeReport' &&
                 data.cluster === 'genBasic' &&
-                data.data.hasOwnProperty('1028') &&
+                data.data['1028'] !== undefined &&
                 data.data['1028'] == 0
             ) {
                 // Try to read the position after the motor stops, the device occasionally report wrong data right after stopping
@@ -2583,7 +2614,7 @@ const definitions: Definition[] = [
                 type === 'message' &&
                 data.type === 'attributeReport' &&
                 data.cluster === 'genMultistateOutput' &&
-                data.data.hasOwnProperty('presentValue') &&
+                data.data.presentValue !== undefined &&
                 data.data['presentValue'] > 1
             ) {
                 // Try to read the position after the motor stops, the device occasionally report wrong data right after stopping
@@ -3846,11 +3877,27 @@ const definitions: Definition[] = [
                         .withFeature(e.numeric('size', exposes.access.STATE_SET)),
                 )
                 .withDescription('Feeding schedule'),
-            e.binary('led_indicator', ea.STATE_SET, 'ON', 'OFF').withDescription('Led indicator'),
+            e
+                .binary('led_indicator', ea.STATE_SET, 'ON', 'OFF')
+                .withLabel('Disable LED at night')
+                .withDescription('LED indicator will be disabled every day from 21:00 to 09:00')
+                .withCategory('config'),
             e.child_lock(),
             e.enum('mode', ea.STATE_SET, ['schedule', 'manual']).withDescription('Feeding mode'),
-            e.numeric('serving_size', ea.STATE_SET).withValueMin(1).withValueMax(10).withDescription('One serving size').withUnit('portion'),
-            e.numeric('portion_weight', ea.STATE_SET).withValueMin(1).withValueMax(20).withDescription('Portion weight').withUnit('g'),
+            e
+                .numeric('serving_size', ea.STATE_SET)
+                .withValueMin(1)
+                .withValueMax(10)
+                .withDescription('One serving size')
+                .withUnit('portion')
+                .withCategory('config'),
+            e
+                .numeric('portion_weight', ea.STATE_SET)
+                .withValueMin(1)
+                .withValueMax(20)
+                .withDescription('Portion weight')
+                .withUnit('g')
+                .withCategory('config'),
         ],
         extend: [lumiZigbeeOTA()],
         configure: async (device, coordinatorEndpoint) => {
@@ -4487,6 +4534,13 @@ const definitions: Definition[] = [
             lumiPower(),
             lumiZigbeeOTA(),
         ],
+    },
+    {
+        zigbeeModel: ['lumi.valve.agl001'],
+        model: 'VC-X01D',
+        vendor: 'Aqara',
+        description: 'Valve controller T1',
+        extend: [lumiZigbeeOTA(), onOff({powerOnBehavior: false}), battery()],
     },
 ];
 

@@ -2,14 +2,15 @@ import fz from '../converters/fromZigbee';
 import * as exposes from '../lib/exposes';
 import {electricityMeter, onOff, ota} from '../lib/modernExtend';
 import * as reporting from '../lib/reporting';
-import {Definition} from '../lib/types';
+import {DefinitionWithExtend} from '../lib/types';
+
 const e = exposes.presets;
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         zigbeeModel: ['EMIZB-141'],
         model: 'EMIZB-141',
-        vendor: 'frient',
+        vendor: 'Frient',
         description: 'Smart powermeter Zigbee bridge',
         fromZigbee: [fz.metering, fz.battery],
         toZigbee: [],
@@ -23,7 +24,7 @@ const definitions: Definition[] = [
     {
         zigbeeModel: ['SMRZB-153'],
         model: 'SMRZB-153',
-        vendor: 'Frient A/S',
+        vendor: 'Frient',
         description: 'Smart Cable - Power switch with power measurement',
         extend: [onOff({configureReporting: false}), electricityMeter()],
         endpoint: (device) => {

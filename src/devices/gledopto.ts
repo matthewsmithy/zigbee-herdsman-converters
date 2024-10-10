@@ -2,10 +2,10 @@ import tz from '../converters/toZigbee';
 import * as libColor from '../lib/color';
 import * as exposes from '../lib/exposes';
 import {logger} from '../lib/logger';
-import {light, LightArgs, OnOffArgs, onOff, identify} from '../lib/modernExtend';
+import {identify, light, LightArgs, onOff, OnOffArgs} from '../lib/modernExtend';
 import * as ota from '../lib/ota';
 import * as globalStore from '../lib/store';
-import {Configure, Definition, KeyValue, OnEventType, Zh, Tz, ModernExtend} from '../lib/types';
+import {Configure, DefinitionWithExtend, KeyValue, ModernExtend, OnEventType, Tz, Zh} from '../lib/types';
 import * as utils from '../lib/utils';
 
 const NS = 'zhc:gledopto';
@@ -95,7 +95,7 @@ const tzLocal = {
             if (key == 'color') {
                 const result = await tzLocal1.gledopto_light_color.convertSet(entity, key, value, meta);
                 utils.assertObject(result);
-                if (result.state && result.state.color.hasOwnProperty('x') && result.state.color.hasOwnProperty('y')) {
+                if (result.state && result.state.color.x !== undefined && result.state.color.y !== undefined) {
                     result.state.color_temp = Math.round(libColor.ColorXY.fromObject(result.state.color).toMireds());
                 }
 
@@ -144,7 +144,7 @@ function gledoptoOnOff(args?: OnOffArgs) {
             const interval = setInterval(async () => {
                 try {
                     await device.endpoints[0].read('genOnOff', ['onOff']);
-                } catch (error) {
+                } catch {
                     // Do nothing
                 }
             }, 5000);
@@ -169,7 +169,7 @@ function gledoptoConfigureReadModelID(): ModernExtend {
     return {configure, isModernExtend: true};
 }
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         zigbeeModel: ['GL-SD-003P'],
         model: 'GL-SD-003P',
@@ -417,8 +417,8 @@ const definitions: Definition[] = [
         model: 'GL-C-003P',
         vendor: 'Gledopto',
         ota: ota.zigbeeOTA,
-        description: 'Zigbee LED Controller RGB (pro)',
-        extend: [light({color: {modes: ['xy', 'hs'], enhancedHue: true}}), identify(), gledoptoConfigureReadModelID()],
+        description: 'Zigbee LED Controller CCT (pro)',
+        extend: [light({colorTemp: {range: [158, 500]}}), identify(), gledoptoConfigureReadModelID()],
     },
     {
         zigbeeModel: ['GL-C-008P'],
@@ -844,6 +844,13 @@ const definitions: Definition[] = [
         vendor: 'Gledopto',
         description: 'Zigbee 30W Floodlight RGB+CCT',
         extend: [gledoptoLight({colorTemp: {range: undefined}, color: true})],
+    },
+    {
+        zigbeeModel: ['GL-SD-001P'],
+        model: 'GL-SD-001P',
+        vendor: 'Gledopto',
+        description: 'Triac-dimmer',
+        extend: [light()],
     },
     {
         zigbeeModel: ['GL-FL-005TZS'],

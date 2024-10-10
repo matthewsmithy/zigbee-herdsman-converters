@@ -1,12 +1,13 @@
 import fz from '../converters/fromZigbee';
 import * as exposes from '../lib/exposes';
 import * as legacy from '../lib/legacy';
+import * as tuya from '../lib/tuya';
+import {DefinitionWithExtend} from '../lib/types';
+
 const e = exposes.presets;
 const ea = exposes.access;
-import * as tuya from '../lib/tuya';
-import {Definition} from '../lib/types';
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         fingerprint: [{modelID: 'TS0601', manufacturerName: '_TZE200_d0yu2xgi'}],
         zigbeeModel: ['0yu2xgi'],
@@ -102,7 +103,7 @@ const definitions: Definition[] = [
         },
     },
     {
-        fingerprint: tuya.fingerprint('TS0601', ['_TZE200_nlrfgpny', '_TZE204_nlrfgpny']),
+        fingerprint: tuya.fingerprint('TS0601', ['_TZE200_nlrfgpny', '_TZE284_nlrfgpny', '_TZE204_nlrfgpny']),
         model: 'NAS-AB06B2',
         vendor: 'Neo',
         description: 'Outdoor solar alarm',

@@ -2,24 +2,31 @@ import fz from '../converters/fromZigbee';
 import tz from '../converters/toZigbee';
 import * as exposes from '../lib/exposes';
 import {
+    battery,
     deviceEndpoints,
     electricityMeter,
-    light,
-    onOff,
-    battery,
-    occupancy,
-    temperature,
-    illuminance,
     humidity,
-    identify,
     iasZoneAlarm,
+    identify,
+    illuminance,
+    light,
+    occupancy,
+    onOff,
+    temperature,
 } from '../lib/modernExtend';
 import * as reporting from '../lib/reporting';
-import {Definition} from '../lib/types';
+import {DefinitionWithExtend} from '../lib/types';
 
 const e = exposes.presets;
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
+    {
+        zigbeeModel: ['ROB_200-004-1'],
+        model: 'ROB_200-004-1',
+        vendor: 'ROBB',
+        description: 'ZigBee AC phase-cut dimmer',
+        extend: [light({configureReporting: true})],
+    },
     {
         zigbeeModel: ['ROB_200-060-0'],
         model: 'ROB_200-060-0',

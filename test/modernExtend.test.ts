@@ -1,7 +1,7 @@
-import {repInterval} from '../src/lib/constants';
-import {philipsFz} from '../src/lib/philips';
-import {fromZigbee as lumiFz} from '../src/lib/lumi';
 import fz from '../src/converters/fromZigbee';
+import {repInterval} from '../src/lib/constants';
+import {fromZigbee as lumiFz} from '../src/lib/lumi';
+import {philipsFz} from '../src/lib/philips';
 import {assertDefintion, mockDevice, reportingItem} from './utils';
 
 describe('ModernExtend', () => {
@@ -174,7 +174,18 @@ describe('ModernExtend', () => {
             device: mockDevice({modelID: 'SP 120', endpoints: [{inputClusters: ['genOnOff', 'haElectricalMeasurement', 'seMetering']}]}),
             meta: undefined,
             fromZigbee: [fz.on_off, fz.electrical_measurement, fz.metering],
-            toZigbee: ['state', 'on_time', 'off_wait_time', 'power', 'voltage', 'current', 'energy'],
+            toZigbee: [
+                'state',
+                'on_time',
+                'off_wait_time',
+                'power',
+                'voltage',
+                'current',
+                'energy',
+                'produced_energy',
+                'ac_frequency',
+                'power_factor',
+            ],
             exposes: ['current', 'energy', 'linkquality', 'power', 'switch(state)', 'voltage'],
             bind: {1: ['genOnOff', 'haElectricalMeasurement', 'seMetering']},
             read: {
@@ -195,7 +206,7 @@ describe('ModernExtend', () => {
                             reportingItem('rmsVoltage', 10, 65000, 5),
                         ],
                     ],
-                    ['seMetering', [reportingItem('currentSummDelivered', 10, 65000, [0, 10])]],
+                    ['seMetering', [reportingItem('currentSummDelivered', 10, 65000, 10)]],
                 ],
             },
         });
@@ -303,7 +314,16 @@ describe('ModernExtend', () => {
                 'osram_set_transition',
                 'osram_remember_state',
             ],
-            exposes: ['action', 'effect', 'light_l1(state,brightness)', 'light_l2(state,brightness)', 'light_s1(state,brightness)', 'linkquality'],
+            exposes: [
+                'action',
+                'effect',
+                'effect',
+                'effect',
+                'light_l1(state,brightness)',
+                'light_l2(state,brightness)',
+                'light_s1(state,brightness)',
+                'linkquality',
+            ],
             bind: {
                 10: ['genOnOff', 'genLevelCtrl'],
                 11: ['genOnOff', 'genLevelCtrl'],

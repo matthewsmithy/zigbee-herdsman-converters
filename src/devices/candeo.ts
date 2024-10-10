@@ -1,7 +1,7 @@
 import {electricityMeter, light, onOff} from '../lib/modernExtend';
-import {Definition} from '../lib/types';
+import {DefinitionWithExtend} from '../lib/types';
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         zigbeeModel: ['C205'],
         model: 'C205',
@@ -37,6 +37,13 @@ const definitions: Definition[] = [
         vendor: 'Candeo',
         description: 'Zigbee micro smart dimmer',
         extend: [light({configureReporting: true}), electricityMeter()],
+    },
+    {
+        fingerprint: [{modelID: 'Candeo Zigbee Dimmer', manufacturerID: 4107}],
+        model: 'C201',
+        vendor: 'Candeo',
+        description: 'Zigbee micro smart dimmer',
+        extend: [light({configureReporting: true})],
     },
 ];
 

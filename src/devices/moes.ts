@@ -2,13 +2,15 @@ import fz from '../converters/fromZigbee';
 import tz from '../converters/toZigbee';
 import * as exposes from '../lib/exposes';
 import * as legacy from '../lib/legacy';
+import {actionEnumLookup, battery, deviceEndpoints, onOff} from '../lib/modernExtend';
 import * as reporting from '../lib/reporting';
 import * as tuya from '../lib/tuya';
-import {Definition} from '../lib/types';
+import {DefinitionWithExtend} from '../lib/types';
+import * as zosung from '../lib/zosung';
+
 const e = exposes.presets;
 const ea = exposes.access;
-import {onOff, deviceEndpoints, actionEnumLookup, battery} from '../lib/modernExtend';
-import * as zosung from '../lib/zosung';
+
 const fzZosung = zosung.fzZosung;
 const tzZosung = zosung.tzZosung;
 const ez = zosung.presetsZosung;
@@ -19,7 +21,7 @@ const exposesLocal = {
     program_temperature: (name: string) => e.numeric(name, ea.STATE_SET).withUnit('°C').withValueMin(5).withValueMax(35).withValueStep(0.5),
 };
 
-const definitions: Definition[] = [
+const definitions: DefinitionWithExtend[] = [
     {
         fingerprint: [
             {modelID: 'TS011F', manufacturerName: '_TZ3000_cymsnfvf'},
@@ -139,7 +141,9 @@ const definitions: Definition[] = [
                     .withSystemMode(['off', 'heat'], ea.STATE_SET)
                     .withRunningState(['idle', 'heat', 'cool'], ea.STATE)
                     .withPreset(['hold', 'program']),
+
                 e.temperature_sensor_select(['IN', 'AL', 'OU']),
+
                 e
                     .composite('program', 'program', ea.STATE_SET)
                     .withDescription('Time of day and setpoint to use when in program mode')
@@ -545,12 +549,12 @@ const definitions: Definition[] = [
         ],
         configure: async (device, coordinatorEndpoint) => {
             const endpoint = device.getEndpoint(1);
-            await endpoint.read('genBasic', [0x0004, 0x000, 0x0001, 0x0005, 0x0007, 0xfffe]);
+            await tuya.configureMagicPacket(device, coordinatorEndpoint);
             await endpoint.write('genOnOff', {tuyaOperationMode: 1});
             await endpoint.read('genOnOff', ['tuyaOperationMode']);
             try {
                 await endpoint.read(0xe001, [0xd011]);
-            } catch (err) {
+            } catch {
                 /* do nothing */
             }
             await endpoint.read('genPowerCfg', ['batteryVoltage', 'batteryPercentageRemaining']);
